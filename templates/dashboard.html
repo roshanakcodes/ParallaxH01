@@ -3,40 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nurse Dashboard - Authentication Monitor</title>
+    <title>ClinicalGuard - Nurse Verification Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 font-sans min-h-screen">
+<body class="bg-slate-50 font-sans min-h-screen text-slate-800">
     
-    <nav class="bg-slate-800 p-4 text-white shadow-md mb-8">
-        <div class="max-w-5xl mx-auto flex gap-6 px-4">
-            <a href="/" class="text-blue-400 font-bold">Nurse Dashboard</a>
-            <a href="/register" class="hover:text-blue-300 font-semibold transition">Register Patient</a>
-            <a href="/patients" class="hover:text-blue-300 font-semibold transition">Manage Profiles</a>
-            <a href="/nurses" class="hover:text-blue-300 font-semibold transition border-l pl-4 border-slate-600">Admin: Staff</a>
+    <!-- Clinical Modern Frosted Glass Navigation -->
+    <nav class="backdrop-blur-md bg-white/80 sticky top-0 z-50 border-b border-slate-200 shadow-sm">
+        <div class="max-w-6xl mx-auto flex justify-between items-center px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="h-3 w-3 rounded-full bg-emerald-500 animate-ping"></div>
+                <span class="font-bold text-slate-900 tracking-tight text-lg">ClinicalGuard <span class="text-sky-600 font-normal">IoT</span></span>
+            </div>
+            <div class="flex gap-6 items-center text-sm">
+                <a href="/" class="text-sky-600 font-semibold border-b-2 border-sky-600 pb-1">Nurse Dashboard</a>
+                <a href="/register" class="text-slate-600 hover:text-slate-900 font-medium transition">Register Patient</a>
+                <a href="/patients" class="text-slate-600 hover:text-slate-900 font-medium transition">Profiles</a>
+                <a href="/nurses" class="text-slate-600 hover:text-slate-900 font-medium transition pl-4 border-l border-slate-300">Admin Staff</a>
+            </div>
         </div>
     </nav>
 
-    <div class="max-w-5xl mx-auto px-4">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-slate-800">Medication Verification Feed</h1>
-            <button onclick="clearAllLogs()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow transition">
-                Clear All Logs
-            </button>
+
+    
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto px-6 py-8">
+        
+        <!-- Header & Telemetry Banner -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Medication Verification Feed</h1>
+                <p class="text-sm text-slate-500 mt-1">Real-time telemetry and zero-trust security gate monitor.</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- System Status Indicator -->
+                <div class="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full text-xs font-semibold text-emerald-700">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Hardware Online
+                </div>
+                <div class="flex items-center gap-3">
+                <!-- NEW: Download Logs Button -->
+                <a href="/api/logs/download" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm py-2 px-4 rounded-lg shadow-sm transition flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export CSV
+                </a>
+                <button onclick="clearAllLogs()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium text-sm py-2 px-4 rounded-lg shadow-sm transition">
+                    Clear Logs
+                </button>
+            </div>
+            </div>
         </div>
         
-        <div class="bg-white shadow rounded-lg overflow-hidden">
+        <!-- Clinical Data Table -->
+        <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
             <table class="min-w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50">
+                <thead class="bg-slate-50/75">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Time</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Patient RFID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cause</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Patient RFID</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Verification Status</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Diagnostic Cause</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
-                <tbody id="log-table-body" class="bg-white divide-y divide-slate-200">
+                <tbody id="log-table-body" class="bg-white divide-y divide-slate-100">
+                    <!-- Dynamic Rows Injected Here -->
                 </tbody>
             </table>
         </div>
@@ -50,36 +83,41 @@
                 const tbody = document.getElementById('log-table-body');
                 tbody.innerHTML = ''; 
                 
+                if (logs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm">Awaiting hardware telemetry scan...</td></tr>`;
+                    return;
+                }
+
                 logs.forEach(log => {
-                    let statusColor = 'bg-slate-100 text-slate-800'; // Default
+                    let statusBadge = 'bg-slate-100 text-slate-700 border-slate-200';
 
                     if (log.status === 'VERIFIED') {
-                        statusColor = 'bg-green-100 text-green-800';
+                        statusBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium';
                     } else if (log.status === 'REJECTED') {
-                        statusColor = 'bg-red-100 text-red-800'; // Default Rejection
+                        statusBadge = 'bg-rose-50 text-rose-700 border-rose-200 font-medium';
                         
-                        // Custom UI Alerts for specific edge cases
+                        // Critical Alert Enhancements with Glow & Pulse
                         if (log.cause.includes('SHAKE_DETECTED')) {
-                            statusColor = 'bg-orange-500 text-white font-bold animate-pulse';
+                            statusBadge = 'bg-amber-500 text-white font-bold animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.4)] border-amber-600';
                         } else if (log.cause.includes('HALF_PILL')) {
-                            statusColor = 'bg-yellow-200 text-yellow-900 font-bold';
+                            statusBadge = 'bg-amber-100 text-amber-900 font-bold border-amber-300';
                         } else if (log.cause.includes('UNREGISTERED_COLOR')) {
-                            statusColor = 'bg-purple-200 text-purple-900 font-bold';
+                            statusBadge = 'bg-purple-100 text-purple-900 font-bold border-purple-300';
                         }
                     }
                     
                     const row = `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${log.timestamp}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">${log.rfid_uid}</td>
+                        <tr class="hover:bg-slate-50/80 transition-all duration-200 ease-in-out">
+                            <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500">${log.timestamp}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">${log.rfid_uid}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 rounded-full border ${statusBadge}">
                                     ${log.status}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">${log.cause}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="deleteLog(${log.id})" class="text-red-500 hover:text-red-700 transition">Dismiss</button>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-medium">${log.cause}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                <button onclick="deleteLog(${log.id})" class="text-slate-400 hover:text-rose-600 transition font-medium text-xs">Dismiss</button>
                             </td>
                         </tr>
                     `;
@@ -100,7 +138,7 @@
         }
 
         async function clearAllLogs() {
-            if (confirm("Are you sure you want to clear all verification history?")) {
+            if (confirm("Are you sure you want to clear all historical logs?")) {
                 try {
                     await fetch('/api/logs/clear', { method: 'DELETE' });
                     fetchLogs();

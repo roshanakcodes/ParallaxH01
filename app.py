@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, make_response
 import sqlite3
 from cv_engine import analyze_medication
+import csv
+import io
 
 app = Flask(__name__)
 DB_FILE = "prescription.db"
@@ -190,6 +192,34 @@ def delete_nurse(nurse_rfid):
     conn.execute("DELETE FROM nurses WHERE nurse_rfid = ?", (nurse_rfid,))
     conn.commit()
     return jsonify({"status": "SUCCESS"}), 200
+
+
+
+
+@app.route('/api/logs/download', methods=['GET'])
+def download_logs():
+    conn = get_db()
+    logs = conn.execute("SELECT timestamp, rfid_uid, status, cause FROM logs ORDER BY timestamp DESC").fetchall()
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # CSV Header
+    writer.writerow(['Timestamp', 'Patient RFID', 'Status', 'Diagnostic Cause'])
+    
+    # CSV Rows
+    for log in logs:
+        writer.writerow([log['timestamp'], log['rfid_uid'], log['status'], log['cause']])
+    
+    output.seek(0)
+    
+    # Prepare response as a downloadable CSV attachment
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=clinical_guard_audit_logs.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
