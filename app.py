@@ -8,10 +8,48 @@ app = Flask(__name__)
 DB_FILE = "prescription.db"
 MASTER_ADMIN_PASSWORD = "HACKATHON_ADMIN"
 
+# System state to track active page and latest scanned card
+SYSTEM_STATE = {
+    "active_page": "dashboard",
+    "latest_rfid": None
+}
+
 def get_db():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
+
+# --- PAGE-AWARE SCANNING & AUTO-FILL ENDPOINTS ---
+
+@app.route('/api/active_page', methods=['POST'])
+def set_active_page():
+    data = request.get_json(force=True, silent=True) or {}
+    SYSTEM_STATE['active_page'] = data.get('page', 'dashboard')
+    return jsonify({"status": "SUCCESS", "active_page": SYSTEM_STATE['active_page']}), 200
+
+@app.route('/api/latest_rfid', methods=['GET'])
+def get_latest_rfid():
+    rfid = SYSTEM_STATE.get('latest_rfid')
+    # Clear the buffer after sending so it only auto-fills once per scan
+    SYSTEM_STATE['latest_rfid'] = None 
+    return jsonify({"rfid_uid": rfid}), 200
+
+@app.route('/api/scan', methods=['POST'])
+def handle_rfid_scan():
+    data = request.get_json(force=True, silent=True) or {}
+    rfid_uid = data.get('rfid_uid')
+    active_page = SYSTEM_STATE.get('active_page', 'dashboard')
+
+    if active_page != 'dashboard':
+        SYSTEM_STATE['latest_rfid'] = rfid_uid
+        return jsonify({
+            "status": "CAPTURED",
+            "active_page": active_page,
+            "rfid_uid": rfid_uid,
+            "code": f"SENT_TO_{active_page.upper()}"
+        }), 200
+    
+    return verify()
 
 # --- MEDICATION VERIFICATION ENDPOINT ---
 
@@ -46,7 +84,6 @@ def verify():
         return log_and_return("REJECTED", vision.get('status', 'VISION_ERROR'))
 
     # 4. Partial Dosage / Half-Pill Check
-    # If the weight is roughly half of the expected prescription, reject specifically
     half_weight = patient['expected_weight_g'] / 2.0
     if abs(measured_weight - half_weight) <= patient['tolerance_g']:
         return log_and_return("REJECTED", "PARTIAL_DOSAGE_HALF_PILL_DETECTED")
@@ -98,6 +135,30 @@ def clear_all_logs():
     conn.execute("DELETE FROM logs")
     conn.commit()
     return jsonify({"status": "SUCCESS"}), 200
+
+@app.route('/api/logs/download', methods=['GET'])
+def download_logs():
+    conn = get_db()
+    logs = conn.execute("SELECT timestamp, rfid_uid, status, cause FROM logs ORDER BY timestamp DESC").fetchall()
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # CSV Header
+    writer.writerow(['Timestamp', 'Patient RFID', 'Status', 'Diagnostic Cause'])
+    
+    # CSV Rows
+    for log in logs:
+        writer.writerow([log['timestamp'], log['rfid_uid'], log['status'], log['cause']])
+    
+    output.seek(0)
+    
+    # Prepare response as a downloadable CSV attachment
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=clinical_guard_audit_logs.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
 
 # --- PATIENT PROFILES MANAGEMENT ---
 
@@ -192,33 +253,6 @@ def delete_nurse(nurse_rfid):
     conn.execute("DELETE FROM nurses WHERE nurse_rfid = ?", (nurse_rfid,))
     conn.commit()
     return jsonify({"status": "SUCCESS"}), 200
-
-
-
-
-@app.route('/api/logs/download', methods=['GET'])
-def download_logs():
-    conn = get_db()
-    logs = conn.execute("SELECT timestamp, rfid_uid, status, cause FROM logs ORDER BY timestamp DESC").fetchall()
-
-    # Create CSV in memory
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # CSV Header
-    writer.writerow(['Timestamp', 'Patient RFID', 'Status', 'Diagnostic Cause'])
-    
-    # CSV Rows
-    for log in logs:
-        writer.writerow([log['timestamp'], log['rfid_uid'], log['status'], log['cause']])
-    
-    output.seek(0)
-    
-    # Prepare response as a downloadable CSV attachment
-    response = make_response(output.getvalue())
-    response.headers["Content-Disposition"] = "attachment; filename=clinical_guard_audit_logs.csv"
-    response.headers["Content-type"] = "text/csv"
-    return response
 
 
 if __name__ == '__main__':

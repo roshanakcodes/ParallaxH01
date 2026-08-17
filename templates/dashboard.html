@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClinicalGuard - Nurse Verification Dashboard</title>
+    <title>ClinicalGuard - Nurse Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 font-sans min-h-screen text-slate-800">
@@ -12,7 +12,7 @@
     <nav class="backdrop-blur-md bg-white/80 sticky top-0 z-50 border-b border-slate-200 shadow-sm">
         <div class="max-w-6xl mx-auto flex justify-between items-center px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="h-3 w-3 rounded-full bg-emerald-500 animate-ping"></div>
+                <div class="h-3 w-3 rounded-full bg-emerald-500"></div>
                 <span class="font-bold text-slate-900 tracking-tight text-lg">ClinicalGuard <span class="text-sky-600 font-normal">IoT</span></span>
             </div>
             <div class="flex gap-6 items-center text-sm">
@@ -24,50 +24,40 @@
         </div>
     </nav>
 
-
-    
-    <!-- Main Container -->
     <div class="max-w-6xl mx-auto px-6 py-8">
-        
-        <!-- Header & Telemetry Banner -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Medication Verification Feed</h1>
-                <p class="text-sm text-slate-500 mt-1">Real-time telemetry and zero-trust security gate monitor.</p>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Real-Time Audit & Dispensation Logs</h1>
+                <p class="text-sm text-slate-500 mt-1">Live monitoring of medication verification checkpoints and hardware telemetry.</p>
             </div>
-            
             <div class="flex items-center gap-3">
-                <!-- System Status Indicator -->
-                
-                <div class="flex items-center gap-3">
-                <!-- NEW: Download Logs Button -->
-                <a href="/api/logs/download" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm py-2 px-4 rounded-lg shadow-sm transition flex items-center gap-2">
+                <a href="/api/logs/download" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition text-xs flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Export CSV
+                    Download CSV Audit
                 </a>
-                <button onclick="clearAllLogs()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium text-sm py-2 px-4 rounded-lg shadow-sm transition">
+                <button onclick="clearLogs()" class="bg-white hover:bg-slate-50 text-rose-600 border border-slate-200 font-semibold py-2 px-4 rounded-lg shadow-sm transition text-xs">
                     Clear Logs
                 </button>
             </div>
-            </div>
         </div>
         
-        <!-- Clinical Data Table -->
         <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
             <table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50/75">
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Timestamp</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Patient RFID</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Verification Status</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Diagnostic Cause</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Diagnostic Cause / Telemetry</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
-                <tbody id="log-table-body" class="bg-white divide-y divide-slate-100">
-                    <!-- Dynamic Rows Injected Here -->
+                <tbody id="logs-table-body" class="bg-white divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm">Loading telemetry logs...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -78,76 +68,95 @@
             try {
                 const response = await fetch('/api/logs');
                 const logs = await response.json();
-                const tbody = document.getElementById('log-table-body');
-                tbody.innerHTML = ''; 
+                const tbody = document.getElementById('logs-table-body');
                 
                 if (logs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm">Awaiting hardware telemetry scan...</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm">No dispensation records found.</td></tr>`;
                     return;
                 }
 
-                logs.forEach(log => {
-                    let statusBadge = 'bg-slate-100 text-slate-700 border-slate-200';
-
-                    if (log.status === 'VERIFIED') {
-                        statusBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium';
-                    } else if (log.status === 'REJECTED') {
-                        statusBadge = 'bg-rose-50 text-rose-700 border-rose-200 font-medium';
-                        
-                        // Critical Alert Enhancements with Glow & Pulse
-                        if (log.cause.includes('SHAKE_DETECTED')) {
-                            statusBadge = 'bg-amber-500 text-white font-bold animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.4)] border-amber-600';
-                        } else if (log.cause.includes('HALF_PILL')) {
-                            statusBadge = 'bg-amber-100 text-amber-900 font-bold border-amber-300';
-                        } else if (log.cause.includes('UNREGISTERED_COLOR')) {
-                            statusBadge = 'bg-purple-100 text-purple-900 font-bold border-purple-300';
-                        }
-                    }
-                    
-                    const row = `
-                        <tr class="hover:bg-slate-50/80 transition-all duration-200 ease-in-out">
-                            <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500">${log.timestamp}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">${log.rfid_uid}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 rounded-full border ${statusBadge}">
-                                    ${log.status}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-medium">${log.cause}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                <button onclick="deleteLog(${log.id})" class="text-slate-400 hover:text-rose-600 transition font-medium text-xs">Dismiss</button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
+                tbody.innerHTML = logs.map(log => `
+                    <tr id="row-${log.id}" class="hover:bg-slate-50/80 transition">
+                        <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500">${log.timestamp}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs font-mono font-semibold text-slate-700">${log.rfid_uid}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${log.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
+                                ${log.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-600">${log.cause}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <button onclick="deleteLog(${log.id})" class="text-slate-400 hover:text-rose-600 font-medium text-xs transition">Remove</button>
+                        </td>
+                    </tr>
+                `).join('');
             } catch (error) {
                 console.error('Error fetching logs:', error);
             }
         }
 
-        async function deleteLog(logId) {
+        async function deleteLog(id) {
             try {
-                await fetch(`/api/logs/${logId}`, { method: 'DELETE' });
-                fetchLogs();
-            } catch (error) {
-                console.error('Error deleting log:', error);
-            }
-        }
-
-        async function clearAllLogs() {
-            if (confirm("Are you sure you want to clear all historical logs?")) {
-                try {
-                    await fetch('/api/logs/clear', { method: 'DELETE' });
-                    fetchLogs();
-                } catch (error) {
-                    console.error('Error clearing logs:', error);
+                const res = await fetch(`/api/logs/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    document.getElementById(`row-${id}`).remove();
                 }
+            } catch (error) { console.error('Error deleting log:', error); }
+        }
+
+        async function clearLogs() {
+            if (confirm("Are you sure you want to clear all log entries?")) {
+                try {
+                    const res = await fetch('/api/logs/clear', { method: 'DELETE' });
+                    if (res.ok) { fetchLogs(); }
+                } catch (error) { console.error('Error clearing logs:', error); }
             }
         }
 
-        setInterval(fetchLogs, 1000);
-        fetchLogs(); 
+        // Poll logs every 3 seconds for real-time hardware updates
+        fetchLogs();
+        setInterval(fetchLogs, 3000);
+
+        // --- RFID BACKGROUND AUTO-FILL & PAGE NOTIFIER ---
+        const rawPath = window.location.pathname.replace(/^\/|\/$/g, '').trim();
+        const currentPath = rawPath === '' ? 'dashboard' : rawPath;
+
+        fetch('/api/active_page', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page: currentPath })
+        });
+
+        if (currentPath !== 'dashboard') {
+            setInterval(() => {
+                fetch('/api/latest_rfid')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.rfid_uid) {
+                            const scannedUid = data.rfid_uid;
+                            const activeEl = document.activeElement;
+                            if (activeEl && (activeEl.id === 'nurse_rfid' || activeEl.id === 'rfid_uid' || activeEl.name === 'nurse_rfid' || activeEl.name === 'rfid_uid')) {
+                                activeEl.value = scannedUid;
+                                activeEl.dispatchEvent(new Event('input'));
+                                return;
+                            }
+                            const emptyInput = Array.from(document.querySelectorAll('input[id*="rfid"], input[name*="rfid"]'))
+                                                    .find(input => input.value.trim() === '');
+                            if (emptyInput) {
+                                emptyInput.value = scannedUid;
+                                emptyInput.dispatchEvent(new Event('input'));
+                            } else {
+                                const primaryInput = document.getElementById('rfid_uid') || document.getElementById('nurse_rfid');
+                                if (primaryInput) {
+                                    primaryInput.value = scannedUid;
+                                    primaryInput.dispatchEvent(new Event('input'));
+                                }
+                            }
+                        }
+                    })
+                    .catch(err => console.error("RFID Sync Error:", err));
+            }, 800);
+        }
     </script>
 </body>
 </html>
