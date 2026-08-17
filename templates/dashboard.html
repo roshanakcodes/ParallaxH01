@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nurse Dashboard - Authentication Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen">
+    
+    <nav class="bg-slate-800 p-4 text-white shadow-md mb-8">
+        <div class="max-w-5xl mx-auto flex gap-6 px-4">
+            <a href="/" class="text-blue-400 font-bold">Nurse Dashboard</a>
+            <a href="/register" class="hover:text-blue-300 font-semibold transition">Register Patient</a>
+            <a href="/patients" class="hover:text-blue-300 font-semibold transition">Manage Profiles</a>
+            <a href="/nurses" class="hover:text-blue-300 font-semibold transition border-l pl-4 border-slate-600">Admin: Staff</a>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto px-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-slate-800">Medication Verification Feed</h1>
+            <button onclick="clearAllLogs()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow transition">
+                Clear All Logs
+            </button>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Patient RFID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cause</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="log-table-body" class="bg-white divide-y divide-slate-200">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const logs = await response.json();
+                const tbody = document.getElementById('log-table-body');
+                tbody.innerHTML = ''; 
+                
+                logs.forEach(log => {
+                    let statusColor = 'bg-slate-100 text-slate-800'; // Default
+
+                    if (log.status === 'VERIFIED') {
+                        statusColor = 'bg-green-100 text-green-800';
+                    } else if (log.status === 'REJECTED') {
+                        statusColor = 'bg-red-100 text-red-800'; // Default Rejection
+                        
+                        // Custom UI Alerts for specific edge cases
+                        if (log.cause.includes('SHAKE_DETECTED')) {
+                            statusColor = 'bg-orange-500 text-white font-bold animate-pulse';
+                        } else if (log.cause.includes('HALF_PILL')) {
+                            statusColor = 'bg-yellow-200 text-yellow-900 font-bold';
+                        } else if (log.cause.includes('UNREGISTERED_COLOR')) {
+                            statusColor = 'bg-purple-200 text-purple-900 font-bold';
+                        }
+                    }
+                    
+                    const row = `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${log.timestamp}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">${log.rfid_uid}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
+                                    ${log.status}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">${log.cause}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="deleteLog(${log.id})" class="text-red-500 hover:text-red-700 transition">Dismiss</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        async function deleteLog(logId) {
+            try {
+                await fetch(`/api/logs/${logId}`, { method: 'DELETE' });
+                fetchLogs();
+            } catch (error) {
+                console.error('Error deleting log:', error);
+            }
+        }
+
+        async function clearAllLogs() {
+            if (confirm("Are you sure you want to clear all verification history?")) {
+                try {
+                    await fetch('/api/logs/clear', { method: 'DELETE' });
+                    fetchLogs();
+                } catch (error) {
+                    console.error('Error clearing logs:', error);
+                }
+            }
+        }
+
+        setInterval(fetchLogs, 1000);
+        fetchLogs(); 
+    </script>
+</body>
+</html>

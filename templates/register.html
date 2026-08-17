@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Patient - Authentication System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen">
+    <nav class="bg-slate-800 p-4 text-white shadow-md mb-8">
+        <div class="max-w-5xl mx-auto flex gap-6 px-4">
+            <a href="/" class="hover:text-blue-300 font-semibold transition">Nurse Dashboard</a>
+            <a href="/register" class="text-blue-400 font-bold">Register Patient</a>
+            <a href="/patients" class="hover:text-blue-300 font-semibold transition">Manage Profiles</a>
+            <a href="/nurses" class="hover:text-blue-300 font-semibold transition border-l pl-4 border-slate-600">Admin: Staff</a>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow px-4">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6">Create Prescription Profile</h1>
+
+        {% if success %}
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{{ success }}</div>
+        {% endif %}
+        {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/register" class="space-y-4">
+            <div class="bg-blue-50 p-4 rounded border border-blue-200 mb-6">
+                <label class="block text-sm font-bold text-blue-800">Nurse Authorization (Scan ID)</label>
+                <input type="password" name="nurse_rfid" placeholder="Scan Nurse Badge to Authorize..." required class="mt-1 block w-full p-2 border border-blue-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-white">
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Patient ID</label>
+                    <input type="text" name="patient_id" placeholder="e.g., PT-90210" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Patient Name</label>
+                    <input type="text" name="patient_name" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Patient RFID Tag</label>
+                    <input type="text" name="rfid_uid" placeholder="e.g., F5A2B1C9" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Expected Weight (g)</label>
+                    <input type="number" step="0.01" name="expected_weight_g" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Tol. (± g)</label>
+                    <input type="number" step="0.01" name="tolerance_g" value="0.2" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Expected Size (mm)</label>
+                    <input type="number" step="0.1" name="expected_size_mm" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Tol. (± mm)</label>
+                    <input type="number" step="0.1" name="size_tolerance_mm" value="2.0" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Expected Color</label>
+                    <select name="expected_color" class="mt-1 block w-full p-2 border border-slate-300 rounded bg-white">
+                        <option value="white">White</option>
+                        <option value="red">Red</option>
+                        <option value="blue">Blue</option>
+                        <option value="yellow">Yellow</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Expected Shape</label>
+                    <select name="expected_shape" class="mt-1 block w-full p-2 border border-slate-300 rounded bg-white">
+                        <option value="round">Round</option>
+                        <option value="capsule">Capsule</option>
+                        <option value="oval">Oval</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded mt-6 transition">Authorize & Save Profile</button>
+        </form>
+    </div>
+</body>
+</html>

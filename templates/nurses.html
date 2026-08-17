@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Manage Staff</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen">
+    
+    <!-- Navigation Bar -->
+    <nav class="bg-slate-800 p-4 text-white shadow-md mb-8">
+        <div class="max-w-5xl mx-auto flex gap-6 px-4">
+            <a href="/" class="hover:text-blue-300 font-semibold transition">Nurse Dashboard</a>
+            <a href="/register" class="hover:text-blue-300 font-semibold transition">Register Patient</a>
+            <a href="/patients" class="hover:text-blue-300 font-semibold transition">Manage Profiles</a>
+            <a href="/nurses" class="text-blue-400 font-bold border-l pl-4 border-slate-600">Admin: Staff</a>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Add Nurse Form (Left Column) -->
+        <div class="md:col-span-1 bg-white p-6 rounded-lg shadow h-fit">
+            <h2 class="text-xl font-bold text-slate-800 mb-4">Add Authorized Nurse</h2>
+            
+            {% if success %}
+            <div class="bg-green-100 text-green-700 p-2 rounded mb-4 text-sm">{{ success }}</div>
+            {% endif %}
+            {% if error %}
+            <div class="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="/nurses" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Nurse Name</label>
+                    <input type="text" name="nurse_name" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Scan Nurse Badge (RFID)</label>
+                    <input type="text" name="nurse_rfid" required class="mt-1 block w-full p-2 border border-slate-300 rounded">
+                </div>
+                <hr class="my-4 border-slate-200">
+                <div>
+                    <label class="block text-sm font-bold text-red-600">Admin Master Password</label>
+                    <input type="password" name="master_password" required class="mt-1 block w-full p-2 border border-red-300 bg-red-50 rounded">
+                </div>
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded transition">Add Staff Member</button>
+            </form>
+        </div>
+
+        <!-- Authorized Staff List (Right Column) -->
+        <div class="md:col-span-2 bg-white shadow rounded-lg overflow-hidden h-fit">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Nurse Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">RFID UID</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for nurse in nurses %}
+                    <tr id="row-{{ nurse.nurse_rfid }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{{ nurse.nurse_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ nurse.nurse_rfid }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="deleteNurse('{{ nurse.nurse_rfid }}')" class="text-red-500 hover:text-red-700 font-bold">Revoke Access</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function deleteNurse(rfid) {
+            const masterPass = prompt("ADMIN ACTION: Enter Master Password to revoke this nurse's access:");
+            
+            if (masterPass) {
+                try {
+                    const response = await fetch(`/api/nurses/${rfid}`, { 
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ master_password: masterPass })
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById(`row-${rfid}`).remove();
+                    } else {
+                        alert("ACCESS DENIED: Incorrect Master Password.");
+                    }
+                } catch (error) {
+                    console.error('Error deleting nurse:', error);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
