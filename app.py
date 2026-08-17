@@ -90,7 +90,7 @@ def verify():
 
     # 5. Unregistered Color Check (e.g., Brown Tablet)
     detected_color = vision.get('color', '').lower()
-    if detected_color not in ['white', 'red', 'blue', 'yellow']:
+    if detected_color not in ['white', 'red', 'blue', 'yellow', 'orange']:
         return log_and_return("REJECTED", f"UNREGISTERED_COLOR_DETECTED_{detected_color.upper()}")
 
     # 6. Gravimetric (Weight) Check
