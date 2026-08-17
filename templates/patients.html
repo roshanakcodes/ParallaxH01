@@ -65,6 +65,7 @@
     </div>
 
     <script>
+        // --- PATIENT DELETION HANDLER ---
         async function deletePatient(rfid) {
             const nurseRfid = prompt("SECURITY CHECK: Scan Nurse Badge or enter Nurse RFID to authorize deletion:");
             if (nurseRfid) {
@@ -82,6 +83,53 @@
                     }
                 } catch (error) { console.error('Error deleting patient:', error); }
             }
+        }
+
+        // --- RFID BACKGROUND AUTO-FILL & PAGE NOTIFIER ---
+        const rawPath = window.location.pathname.replace(/^\/|\/$/g, '').trim();
+        const currentPath = rawPath === '' ? 'dashboard' : rawPath;
+
+        fetch('/api/active_page', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page: currentPath })
+        });
+
+        if (currentPath !== 'dashboard') {
+            setInterval(() => {
+                fetch('/api/latest_rfid')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.rfid_uid) {
+                            const scannedUid = data.rfid_uid;
+
+                            // Priority 1: Fill currently focused input box if user clicked into one
+                            const activeEl = document.activeElement;
+                            if (activeEl && (activeEl.id === 'nurse_rfid' || activeEl.id === 'rfid_uid' || activeEl.name === 'nurse_rfid' || activeEl.name === 'rfid_uid')) {
+                                activeEl.value = scannedUid;
+                                activeEl.dispatchEvent(new Event('input'));
+                                return;
+                            }
+
+                            // Priority 2: Auto-fill first empty RFID input box on the page
+                            const emptyInput = Array.from(document.querySelectorAll('input[id*="rfid"], input[name*="rfid"]'))
+                                                    .find(input => input.value.trim() === '');
+
+                            if (emptyInput) {
+                                emptyInput.value = scannedUid;
+                                emptyInput.dispatchEvent(new Event('input'));
+                            } else {
+                                // Priority 3: Fallback to primary rfid_uid input field
+                                const primaryInput = document.getElementById('rfid_uid') || document.getElementById('nurse_rfid');
+                                if (primaryInput) {
+                                    primaryInput.value = scannedUid;
+                                    primaryInput.dispatchEvent(new Event('input'));
+                                }
+                            }
+                        }
+                    })
+                    .catch(err => console.error("RFID Sync Error:", err));
+            }, 800);
         }
     </script>
 </body>

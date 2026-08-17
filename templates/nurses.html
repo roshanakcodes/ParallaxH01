@@ -45,7 +45,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Badge RFID UID</label>
-                    <input type="text" name="nurse_rfid" placeholder="Tag UID" required class="block w-full p-2.5 border border-slate-200 rounded-lg text-sm">
+                    <input type="text" id="nurse_rfid" name="nurse_rfid" placeholder="Tag UID" required class="block w-full p-2.5 border border-slate-200 rounded-lg text-sm">
                 </div>
                 <hr class="border-slate-100 my-2">
                 <div>
@@ -84,6 +84,7 @@
     </div>
 
     <script>
+        // --- NURSE DELETION HANDLER ---
         async function deleteNurse(rfid) {
             const masterPass = prompt("ADMIN ACTION: Enter Master Password to revoke access:");
             if (masterPass) {
@@ -99,8 +100,57 @@
                     } else {
                         alert("ACCESS DENIED: Incorrect Master Password.");
                     }
-                } catch (error) { console.error('Error deleting nurse:', error); }
+                } catch (error) { 
+                    console.error('Error deleting nurse:', error); 
+                }
             }
+        }
+
+        // --- RFID BACKGROUND AUTO-FILL & PAGE NOTIFIER ---
+        const rawPath = window.location.pathname.replace(/^\/|\/$/g, '').trim();
+        const currentPath = rawPath === '' ? 'dashboard' : rawPath;
+
+        fetch('/api/active_page', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page: currentPath })
+        });
+
+        if (currentPath !== 'dashboard') {
+            setInterval(() => {
+                fetch('/api/latest_rfid')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.rfid_uid) {
+                            const scannedUid = data.rfid_uid;
+
+                            // 1. Focus-target fill
+                            const activeEl = document.activeElement;
+                            if (activeEl && (activeEl.id === 'nurse_rfid' || activeEl.name === 'nurse_rfid')) {
+                                activeEl.value = scannedUid;
+                                activeEl.dispatchEvent(new Event('input'));
+                                return;
+                            }
+
+                            // 2. Empty field auto-fill
+                            const emptyInput = Array.from(document.querySelectorAll('input[id*="rfid"], input[name*="rfid"]'))
+                                                    .find(input => input.value.trim() === '');
+
+                            if (emptyInput) {
+                                emptyInput.value = scannedUid;
+                                emptyInput.dispatchEvent(new Event('input'));
+                            } else {
+                                // 3. Fallback to primary badge input
+                                const primaryInput = document.getElementById('nurse_rfid');
+                                if (primaryInput) {
+                                    primaryInput.value = scannedUid;
+                                    primaryInput.dispatchEvent(new Event('input'));
+                                }
+                            }
+                        }
+                    })
+                    .catch(err => console.error("RFID Sync Error:", err));
+            }, 800);
         }
     </script>
 </body>
